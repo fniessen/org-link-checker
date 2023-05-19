@@ -1,0 +1,128 @@
+#+TITLE:     Find all stale Org mode links
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+
+#+PROPERTY:  header-args :dir ~
+
+* Code
+
+** List all files
+
+Simple file command, ignoring =.svn= directories.
+
+Grep-search through files, ignoring =.svn= directories.
+
+*Assumptions*:
+
+- We consider there's just one link per line.
+
+- We don't look for internal links, that is we only check links at the file
+  level (if the file exists, that's OK, even if links inside it could be
+  stale).
+
+- We don't look for remote files (neither via network share, nor via SSH).
+
+*************** TODO Remove lines with mcpflow@vidiw-pfiweb:...
+
+- We don't look for HTTP(S) links.
+
+#+name: remove-some-links
+#+begin_src sh :results output :var toname="charge_dim"
+find . -not \( -name .svn -prune \) -type f \( -name "*.org" -o -name "*.txt" \) -print0 \
+    | xargs -0 grep "\[\[" \
+    | grep -v -E "\[\[(bbdb:|elisp:|gnus:|http://|https://|id:|info:|mailto:|shell:|<<|//)" \
+    | sed "s%^\([^:\[]*/\)\([^:\[]*\):%\2 \1:%g" \
+    | sed "s%^\([^:]*\):[^\[]*\[\[\([^]]*\)\].*%\1\2%g" \
+    | sed "s%file:%%" \
+    | sed "s%\(.*\)\*.*%\1%" \
+    | sed "s%\(.*\)#.*%\1%" \
+    | sed "s%\(.*\)::.*%\1%" \
+    | sed "s%/cygdrive/d/home/sva%~%"
+#+end_src
+
+#+results: remove-some-links
+#+begin_example
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/../../org-faq.org
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/../../images/babel/blue.png
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/meta-programming-language
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/library-of-babel
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/../../images/babel/dirs.png
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/arguments-to-source-code-blocks
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/library-of-babel.org
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/literate-programming-example
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/header-arguments
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/~/src/org-babel/org-babel-worg.org
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/literate-emacs-init
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/literate-programming-example
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/requirements.org
+org-babel.org ~/Documents/Computers-&-Internet/Software/Organizers/development.org
+org-help.org ~/Documents/
+org-help.org ~/Documents/this text
+#+end_example
+
+** Check links
+
+#+begin_src emacs-lisp :tangle ~/find-all-stale-org-mode-links.el
+(defun my/link-exists-p (link infile)
+  (setq expanded (abbreviate-file-name (expand-file-name link)))
+  (setq expanded (replace-regexp-in-string
+                  "\\(~/.*/~/\\).*\\'" "~/" expanded nil nil 1))
+  (when (not (file-exists-p expanded))
+    (message "%s: File `%s' does NOT exist!" infile expanded)
+    ;; (message "%s: File `%s' exists" infile expanded)
+    ))
+#+end_src
+
+#+name: check-them
+#+begin_src sh :stdin remove-some-links :results output
+while read; do
+    infile=$(echo "$REPLY" | awk '// {print $1;}')
+    link=$(echo "$REPLY" | awk '// {print $2;}')
+    emacs --batch -Q -l D:/home/sva/find-all-stale-org-mode-links.el --eval "(my/link-exists-p \"$link\" \"$infile\")"
+done
+#+end_src
+
+#+results: check-them
+#+begin_example
+org-babel.org -- File `~/Documents/Computers-&-Internet/org-faq.org' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/' exists
+org-babel.org -- File `~/Documents/Computers-&-Internet/images/babel/blue.png' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/' exists
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/' exists
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/meta-programming-language' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/library-of-babel' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/images/babel/dirs.png' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/arguments-to-source-code-blocks' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/' exists
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/library-of-babel.org' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/literate-programming-example' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/header-arguments' does NOT exist!
+org-babel.org -- File `~/src/org-babel/org-babel-worg.org' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/literate-emacs-init' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/literate-programming-example' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/requirements.org' does NOT exist!
+org-babel.org -- File `~/Documents/Computers-&-Internet/Software/Organizers/development.org' does NOT exist!
+org-help.org -- File `~/Documents/' exists
+org-help.org -- File `~/Documents/this' does NOT exist!
+#+end_example
+
+* Full code
+
+*************** TODO Add the creation of the ELisp code file inside the shell (via heredoc)
+cat >| foo <<EOF
+ ...
+EOF
+*************** END
+
+#+begin_src sh :tangle ~/bin/find-all-stale-org-mode-links :noweb yes :padline no
+#!/bin/sh
+
+printf "Checking links, please wait (this can take a while)...\n"
+<<remove-some-links>> |\
+<<check-them>>
+#+end_src

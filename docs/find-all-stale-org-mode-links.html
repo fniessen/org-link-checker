@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Find all stale Org mode links</title>
+<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta  name="generator" content="Org-mode" />
+<meta  name="author" content="Fabrice Niessen" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: 'sh'; }
+  pre.src-bash:before  { content: 'sh'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-R:before     { content: 'R'; }
+  pre.src-perl:before  { content: 'Perl'; }
+  pre.src-java:before  { content: 'Java'; }
+  pre.src-sql:before   { content: 'SQL'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.right  { text-align: center;  }
+  th.left   { text-align: center;   }
+  th.center { text-align: center; }
+  td.right  { text-align: right;  }
+  td.left   { text-align: left;   }
+  td.center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara:nth-child(2) { display: inline; }
+  .footpara { display: block; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]>*/-->
+</style>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Find all stale Org mode links</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. Code</a>
+<ul>
+<li><a href="#sec-1-1">1.1. List all files</a></li>
+<li><a href="#sec-1-2">1.2. Check links</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. Full code</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Code</h2>
+<div class="outline-text-2" id="text-1">
+</div><div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> List all files</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Simple file command, ignoring <code>.svn</code> directories.
+</p>
+
+<p>
+Grep-search through files, ignoring <code>.svn</code> directories.
+</p>
+
+<p>
+<b>Assumptions</b>:
+</p>
+
+<ul class="org-ul">
+<li>We consider there&rsquo;s just one link per line.
+</li>
+
+<li>We don&rsquo;t look for internal links, that is we only check links at the file
+level (if the file exists, that&rsquo;s OK, even if links inside it could be
+stale).
+</li>
+
+<li>We don&rsquo;t look for remote files (neither via network share, nor via SSH).
+
+<div class="inlinetask">
+<b><span class="todo TODO">TODO</span> Remove lines with mcpflow@vidiw-pfiweb:&#x2026;</b><br  />
+nil</div>
+</li>
+
+<li>We don&rsquo;t look for HTTP(S) links.
+</li>
+</ul>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="remove-some-links">find . -not <span class="org-string">\(</span> -name .svn -prune <span class="org-string">\)</span> -type f <span class="org-string">\(</span> -name <span class="org-string">"*.org"</span> -o -name <span class="org-string">"*.txt"</span> <span class="org-string">\)</span> -print0 <span class="org-sh-escaped-newline">\</span>
+    | xargs -0 grep <span class="org-string">"\[\["</span> <span class="org-sh-escaped-newline">\</span>
+    | grep -v -E <span class="org-string">"\[\[(bbdb:|elisp:|gnus:|http://|https://|id:|info:|mailto:|shell:|&lt;&lt;|//)"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%^\([^:\[]*/\)\([^:\[]*\):%\2 \1:%g"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%^\([^:]*\):[^\[]*\[\[\([^]]*\)\].*%\1\2%g"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%file:%%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%\(.*\)\*.*%\1%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%\(.*\)#.*%\1%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%\(.*\)::.*%\1%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%/cygdrive/d/home/sva%~%"</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Check links</h3>
+<div class="outline-text-3" id="text-1-2">
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp">(<span class="org-keyword">defun</span> <span class="org-function-name">my/link-exists-p</span> (link infile)
+  (setq expanded (abbreviate-file-name (expand-file-name link)))
+  (setq expanded (replace-regexp-in-string
+                  <span class="org-string">"</span><span class="org-string"><span class="org-regexp-grouping-backslash">\\</span></span><span class="org-string"><span class="org-regexp-grouping-construct">(</span></span><span class="org-string">~/.*/~/</span><span class="org-string"><span class="org-regexp-grouping-backslash">\\</span></span><span class="org-string"><span class="org-regexp-grouping-construct">)</span></span><span class="org-string">.*\\'"</span> <span class="org-string">"~/"</span> expanded nil nil 1))
+  (<span class="org-keyword">when</span> (not (file-exists-p expanded))
+    (message <span class="org-string">"%s: File `</span><span class="org-string"><span class="org-constant">%s</span></span><span class="org-string">' does NOT exist!"</span> infile expanded)
+    <span class="org-comment-delimiter">;; </span><span class="org-comment">(message "%s: File `</span><span class="org-comment"><span class="org-constant">%s</span></span><span class="org-comment">' exists" infile expanded)</span>
+    ))
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="check-them"><span class="org-keyword">while </span><span class="org-builtin">read</span>; <span class="org-keyword">do</span>
+    <span class="org-variable-name">infile</span>=$(<span class="org-sh-quoted-exec">echo</span> <span class="org-string">"$REPLY"</span> | awk <span class="org-string">'// {print $1;}'</span>)
+    <span class="org-variable-name">link</span>=$(<span class="org-sh-quoted-exec">echo</span> <span class="org-string">"$REPLY"</span> | awk <span class="org-string">'// {print $2;}'</span>)
+    emacs --batch -Q -l D:/home/sva/find-all-stale-org-mode-links.el --eval <span class="org-string">"(my/link-exists-p \"$link\" \"$infile\")"</span>
+<span class="org-keyword">done</span>
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Full code</h2>
+<div class="outline-text-2" id="text-2">
+<div class="inlinetask">
+<b><span class="todo TODO">TODO</span> Add the creation of the ELisp code file inside the shell (via heredoc)</b><br  />
+<p>
+cat &gt;| foo &lt;&lt;EOF
+ &#x2026;
+EOF
+</p>
+</div>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span class="org-comment-delimiter">#</span><span class="org-comment">!/bin/</span><span class="org-keyword">sh</span>
+
+<span class="org-builtin">printf</span> <span class="org-string">"Checking links, please wait (this can take a while)...\n"</span>
+find . -not <span class="org-string">\(</span> -name .svn -prune <span class="org-string">\)</span> -type f <span class="org-string">\(</span> -name <span class="org-string">"*.org"</span> -o -name <span class="org-string">"*.txt"</span> <span class="org-string">\)</span> -print0 <span class="org-sh-escaped-newline">\</span>
+    | xargs -0 grep <span class="org-string">"\[\["</span> <span class="org-sh-escaped-newline">\</span>
+    | grep -v -E <span class="org-string">"\[\[(bbdb:|elisp:|gnus:|http://|https://|id:|info:|mailto:|shell:|&lt;&lt;|//)"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%^\([^:\[]*/\)\([^:\[]*\):%\2 \1:%g"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%^\([^:]*\):[^\[]*\[\[\([^]]*\)\].*%\1\2%g"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%file:%%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%\(.*\)\*.*%\1%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%\(.*\)#.*%\1%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%\(.*\)::.*%\1%"</span> <span class="org-sh-escaped-newline">\</span>
+    | sed <span class="org-string">"s%/cygdrive/d/home/sva%~%"</span> |<span class="org-sh-escaped-newline">\</span>
+<span class="org-keyword">while </span><span class="org-builtin">read</span>; <span class="org-keyword">do</span>
+    <span class="org-variable-name">infile</span>=$(<span class="org-sh-quoted-exec">echo</span> <span class="org-string">"$REPLY"</span> | awk <span class="org-string">'// {print $1;}'</span>)
+    <span class="org-variable-name">link</span>=$(<span class="org-sh-quoted-exec">echo</span> <span class="org-string">"$REPLY"</span> | awk <span class="org-string">'// {print $2;}'</span>)
+    emacs --batch -Q -l D:/home/sva/find-all-stale-org-mode-links.el --eval <span class="org-string">"(my/link-exists-p \"$link\" \"$infile\")"</span>
+<span class="org-keyword">done</span>
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Fabrice Niessen</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
